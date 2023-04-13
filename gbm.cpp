@@ -14,7 +14,8 @@ Boosting *train(const std::vector<std::string> &filenames,
     const int treeDepth,
     const double radius,
     const int maxSamples,
-    const std::vector<int> &classes) {
+    const std::vector<int> &classes,
+    bool interrupt) {
 
     std::vector<float> gt;
     std::vector< std::vector<double> > featureRows;

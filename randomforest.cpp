@@ -9,7 +9,8 @@ RandomForest *train(const std::vector<std::string> &filenames,
     const int treeDepth,
     const double radius,
     const int maxSamples,
-    const std::vector<int> &classes) {
+    const std::vector<int> &classes,
+    bool interrupt) {
     ForestParams params;
     params.n_trees = numTrees;
     params.max_depth = treeDepth;
@@ -29,6 +30,7 @@ RandomForest *train(const std::vector<std::string> &filenames,
         [](size_t numFeatures, int numClasses) {});
     std::cout << "Using " << gt.size() << " inliers" << std::endl;
 
+//    saveVectors(gt, ft, "train-vectors.bin");
     const LabelDataView label_vector(gt.data(), gt.size(), 1);
     const FeatureDataView feature_vector(ft.data(), gt.size(), ft.size() / gt.size());
 
@@ -40,6 +42,24 @@ RandomForest *train(const std::vector<std::string> &filenames,
     rtrees->params.numScales = numScales;
 
     return rtrees;
+}
+
+void saveVectors(const std::vector<int>& gt,
+                 const std::vector<float>& ft,
+                 const std::string& vectorFilename)
+{
+    std::ofstream ofs(vectorFilename.c_str(), std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+
+    // How many gt
+    ofs.write((char*)gt.size(), sizeof(std::vector<int>::size_type));
+    ofs.write((char*)gt.data(), gt.size() * sizeof(int));
+
+    // How many ft
+    ofs.write((char*)ft.size(), sizeof(std::vector<float>::size_type));
+    ofs.write((char*)ft.data(), gt.size() * sizeof(float));
+
+//     rtrees->write(ofs);
+
 }
 
 void saveForest(RandomForest *rtrees, const std::string &modelFilename) {

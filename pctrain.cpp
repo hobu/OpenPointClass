@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
         ("i,input", "Ground truth labeled point cloud(s) to use for training", cxxopts::value<std::vector<std::string>>())
         ("o,output", "Output model", cxxopts::value<std::string>()->default_value("model.bin"))
         ("r,resolution", "Resolution of the first scale (-1 = estimate automatically)", cxxopts::value<double>()->default_value("-1"))
+        ("f,extract-features", "Extract features to intermediate output", cxxopts::value<bool>()->default_value("false"))
         ("s,scales", "Number of scales to compute", cxxopts::value<int>()->default_value(MKSTR(NUM_SCALES)))
         ("t,trees", "Number of trees in the forest", cxxopts::value<int>()->default_value(MKSTR(N_TREES)))
         ("d,depth", "Maximum depth of trees", cxxopts::value<int>()->default_value(MKSTR(MAX_DEPTH)))
@@ -54,6 +55,7 @@ int main(int argc, char **argv) {
         const auto radius = result["radius"].as<double>();
         const auto maxSamples = result["max-samples"].as<int>();
         const auto classifier = result["classifier"].as<std::string>();
+        const auto interrupt = result["extract-features"].as<bool>();
         std::vector<int> classes = {};
         if (result.count("classes")) classes = result["classes"].as<std::vector<int>>();
 
@@ -67,19 +69,19 @@ int main(int argc, char **argv) {
             std::cerr << "Gradient Boosted Trees support has not been built (try building with -DWITH_GBT=ON)" << std::endl;
             return EXIT_FAILURE;
         }
-        #endif 
+        #endif
 
         std::cout << "Using " << (classifier == "rf" ? "Random Forest" : "Gradient Boosted Trees") << std::endl;
 
         if (classifier == "rf") {
-            rf::RandomForest *rtrees = rf::train(filenames, &startResolution, scales, numTrees, treeDepth, radius, maxSamples, classes);
+            rf::RandomForest *rtrees = rf::train(filenames, &startResolution, scales, numTrees, treeDepth, radius, maxSamples, classes, interrupt);
             rf::saveForest(rtrees, modelFilename);
             delete rtrees;
         }
 
         #ifdef WITH_GBT
         else if (classifier == "gbt") {
-            gbm::Boosting *booster = gbm::train(filenames, &startResolution, scales, numTrees, treeDepth, radius, maxSamples, classes);
+            gbm::Boosting *booster = gbm::train(filenames, &startResolution, scales, numTrees, treeDepth, radius, maxSamples, classes, interrupt);
             gbm::saveBooster(booster, modelFilename);
         }
         #endif

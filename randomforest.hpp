@@ -24,10 +24,14 @@ RandomForest *train(const std::vector<std::string> &filenames,
     int treeDepth,
     double radius,
     int maxSamples,
-    const std::vector<int> &classes);
+    const std::vector<int> &classes,
+    bool interrupt);
 
 RandomForest *loadForest(const std::string &modelFilename);
 void saveForest(RandomForest *rtrees, const std::string &modelFilename);
+void saveVectors(const std::vector<int>& gt,
+                 const std::vector<float>& ft,
+                 const std::string& modelFilename);
 
 void classify(PointSet &pointSet,
     RandomForest *rtrees,
