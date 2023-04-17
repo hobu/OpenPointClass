@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
         {
             savePointSet(*pointSet, evalResult);
         }
-        
+
     }
     catch (std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;

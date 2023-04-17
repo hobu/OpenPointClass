@@ -16,7 +16,6 @@ int main(int argc, char **argv) {
         ("i,input", "Ground truth labeled point cloud(s) to use for training", cxxopts::value<std::vector<std::string>>())
         ("o,output", "Output model", cxxopts::value<std::string>()->default_value("model.bin"))
         ("r,resolution", "Resolution of the first scale (-1 = estimate automatically)", cxxopts::value<double>()->default_value("-1"))
-        ("f,extract-features", "Extract features to intermediate output", cxxopts::value<bool>()->default_value("false"))
         ("s,scales", "Number of scales to compute", cxxopts::value<int>()->default_value(MKSTR(NUM_SCALES)))
         ("t,trees", "Number of trees in the forest", cxxopts::value<int>()->default_value(MKSTR(N_TREES)))
         ("d,depth", "Maximum depth of trees", cxxopts::value<int>()->default_value(MKSTR(MAX_DEPTH)))
@@ -27,6 +26,7 @@ int main(int argc, char **argv) {
         ("stats", "Path where to store evaluation statistics (JSON)", cxxopts::value<std::string>()->default_value(""))
         ("c,classifier", "Which classifier type to use (rf = Random Forest, gbt = Gradient Boosted Trees)", cxxopts::value<std::string>()->default_value("rf"))
         ("classes", "Train only these classification classes (comma separated IDs)", cxxopts::value<std::vector<int>>())
+        ("f,extract-features", "Extract features to intermediate output", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "Print usage")
         ;
     options.parse_positional({ "input" });
@@ -81,7 +81,15 @@ int main(int argc, char **argv) {
 
         if (classifier == "rf") {
             rf::RandomForest *rtrees = rf::train(filenames, &startResolution, scales, numTrees, treeDepth, radius, maxSamples, classes, interrupt);
-            rf::saveForest(rtrees, modelFilename);
+            // No tree is returned if interrupt is true
+            if (interrupt)
+            {
+                if (!rtrees)
+                    return EXIT_SUCCESS;
+            } else
+            {
+                rf::saveForest(rtrees, modelFilename);
+            }
             delete rtrees;
         }
 
@@ -93,7 +101,7 @@ int main(int argc, char **argv) {
         #endif
 
         if (!evalFilename.empty()) {
-            
+
             std::cout << "Evaluating on " << evalFilename << " ..." << std::endl;
 
             const ClassifierType ctype = fingerprint(modelFilename);
@@ -121,13 +129,13 @@ int main(int argc, char **argv) {
             std::cout << "Features: " << evalFeatures.size() << std::endl;
 
             if (ctype == RandomForest) {
-                rf::classify(*evalPointSet, rtrees, evalFeatures, labels, Regularization::None, 2.5, 
+                rf::classify(*evalPointSet, rtrees, evalFeatures, labels, Regularization::None, 2.5,
                     true, false, true, {}, statsFile);
             }
 
             #ifdef WITH_GBT
             else {
-                gbm::classify(*evalPointSet, booster, evalFeatures, labels, Regularization::None, 2.5, 
+                gbm::classify(*evalPointSet, booster, evalFeatures, labels, Regularization::None, 2.5,
                     true, false, true, {}, statsFile);
             }
             #endif
